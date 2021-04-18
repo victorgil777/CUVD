@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix, make_scorer
@@ -200,19 +201,20 @@ print("Accuracy {0} ROC {1}".format(ac, rc))
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# Plot the bar graph for accuracy and  roc-auc
+# Decision Tree
+model = DecisionTreeClassifier(criterion = 'entropy', random_state=0)
+model.fit(X_train,y_train)
 
-# accuracy score
-plt.figure(figsize=(8, 5))
-plt.bar(['Logistic Regression', 'SVM', 'KNN', 'Naive Bayes', 'Random Forest'], acc,
-        color=['salmon', 'r', 'g', 'b', 'orange'], label='Accuracy')
-plt.ylabel('Accuracy Score')
-plt.xlabel('Algortihms')
+ac = accuracy_score(y_test, y_pred)
+acc.append(ac)
+ac_train = accuracy_score(y_train, y_pred_train)
+rc = roc_auc_score(y_test, y_pred)
+roc.append(rc)
+print("****************************************************")
+print("Decision Tree : ")
+print("Training Set Accuracy : ", ac_train)
+print("Accuracy {0} ROC {1}".format(ac, rc))
 
-# roc-auc
-plt.figure(figsize=(8, 5))
-plt.bar(['Logistic Regression', 'SVM', 'KNN', 'Naive Bayes', 'Random Forest'], roc,
-        color=['salmon', 'r', 'g', 'b', 'orange'], label='ROC AUC')
-plt.ylabel('ROC AUC')
-plt.xlabel('Algortihms')
-plt.show()
+# cross validation
+result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
+print_result(result)
