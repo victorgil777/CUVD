@@ -27,7 +27,7 @@ for name, data in uploaded.items():
 
 
 import pandas as pd
-df = pd.read_csv('data.csv')
+df = pd.read_csv('ESTUDIANTES.csv')
 
 
 df = df.sample(frac=1)
