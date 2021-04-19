@@ -1,10 +1,11 @@
-# import libraries
+# importar las librerias
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix, make_scorer
 from sklearn.model_selection import cross_validate
@@ -14,22 +15,37 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
 import warnings
+import tensorflow
+import numpy as np
+from tensorflow import keras
+from sklearn.preprocessing import MinMaxScaler, Normalizer, OrdinalEncoder
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Dropout, Activation
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from tensorflow.keras.optimizers import Adam, SGD
+from sklearn.model_selection import GridSearchCV
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.utils import to_categorical
 warnings.filterwarnings("ignore")
+
+# importar la base de datos
 
 from google.colab import files
 uploaded = files.upload()
 
-
 for name, data in uploaded.items():
   with open(name, 'wb') as f:
     f.write(data)
-    print ('ESTUDIANTES', name)
-
+    print ('data', name)
 
 import pandas as pd
-df = pd.read_csv('ESTUDIANTES.csv')
-
+df = pd.read_csv('data.csv')
 
 df = df.sample(frac=1)
 
@@ -37,28 +53,32 @@ print(df.shape)
 
 df.head()
 
-# Quartile range
+
+
+# Rango de Quartil
 
 Q1 = df.quantile(0.25)
 Q3 = df.quantile(0.75)
 inter_quartile_range = Q3 - Q1
 
-# quartiles and interquartile range
+# rango quartil e interquartil
 
 df_out = df[~((df < (Q1 - (1.5 * inter_quartile_range))) | (df > (Q3 + (1.5 * inter_quartile_range)))).any(axis=1)]
 df.shape, df_out.shape
 
-# Separate labels and features
+# Definir etiquetas y caracteristicas
 X = df_out.drop(columns=['Resultado_final'])
 y = df_out['Resultado_final']
 
-# Spilt the train and test data
+# Dividir los datos de entrenamiento y de prueba
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-# we used 30% test data
-# check the size before beginning
+
+# Se utilizó el 30% de los datos como conjunto de prueba
+
+# Revisar el tamaño antes de comenzar
 X_train.shape, X_test.shape, y_train.shape, y_test.shape
 
-# cross validation function
+# Función de validación cruzada
 def tn(y_true, y_pred):
     return confusion_matrix(y_true, y_pred)[0, 0]
 
@@ -74,7 +94,7 @@ def tp(y_true, y_pred):
 def acc(y_true, y_pred):
     return accuracy(y_true, y_pred)
 
-# custom accuracy
+# Accuracy personalizada
 def accuracy(y_true, y_pred):
     cnf_matrix = confusion_matrix(y_true, y_pred)
     N = sum(map(sum, cnf_matrix))
@@ -82,7 +102,8 @@ def accuracy(y_true, y_pred):
     tn = cnf_matrix[0, 0]
     return round((tp + tn) / N, 2)
 
-# cross validation purpose
+# Propósito de la validación cruzada
+
 scoring = {'accuracy': make_scorer(metrics.accuracy_score), 'prec': 'precision'}
 scoring = {'tp': make_scorer(tp), 'tn': make_scorer(tn),
            'fp': make_scorer(fp), 'fn': make_scorer(fn),
@@ -95,11 +116,11 @@ def print_result(result):
     print("False Positive: ", result['test_fp'])
     print("Accuracy: ", result['test_acc'])
 
-# acc list and rcc list stores the output of each model
+# Listas almacenadas ACC y RCC de la salida de cada modelo
 acc = []
 roc = []
 
-# Naive Bayes
+# Primer Modelo - Naive Bayes
 model = GaussianNB()
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
@@ -114,18 +135,18 @@ print("Naive Bayes : ")
 print("Training Set Accuracy : ", ac_train)
 print("Test Set Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation
+# Validación cruzada
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# Logistic Regression
+# Segundo Modelo –Regresión Logística
 LR = LogisticRegression()
 LR.fit(X_train, y_train)
 LR.score(X_train, y_train)
 y_pred = LR.predict(X_test)
 y_pred_train = model.predict(X_train)
 
-# find accuracy
+# Accuracy
 ac = accuracy_score(y_test, y_pred)
 acc.append(ac)
 ac_train = accuracy_score(y_train, y_pred_train)
@@ -137,11 +158,10 @@ print("Logistic Regression : ")
 print("Training Set Accuracy : ", ac_train)
 print("Test Set Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation shows how accurate our model is
-result = cross_validate(LR, X_train, y_train, scoring=scoring, cv=10)
+# la validación cruzada muestra la precisión del resultado del modelo=cross_validate(LR, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# Support Vector Machine
+# Tercer Modelo - Support Vector Machine
 model = SVC(gamma='auto', kernel='linear')
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
@@ -157,11 +177,11 @@ print("Support Vector Machine : ")
 print("Training Set Accuracy : ", ac_train)
 print("Test Set Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation
+# Validación cruzada
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# KNN
+# Cuarto Modelo - KNN
 model = KNeighborsClassifier(n_neighbors=9, n_jobs=-1)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
@@ -177,11 +197,11 @@ print("K-Nearest Neighbors : ")
 print("Training Set Accuracy : ", ac_train)
 print("Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation
+# Validación Cruzada
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# Random Forest
+# Quinto Modelo - Random Forest
 model = RandomForestClassifier(n_estimators=20, max_depth=10)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
@@ -197,13 +217,14 @@ print("Random Forest : ")
 print("Training Set Accuracy : ", ac_train)
 print("Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation
+# Validación cruzada
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
 
-# Decision Tree
+# Sexto Modelo - Árboles de decisión
 model = DecisionTreeClassifier(criterion = 'entropy', random_state=0)
 model.fit(X_train,y_train)
+
 
 ac = accuracy_score(y_test, y_pred)
 acc.append(ac)
@@ -215,6 +236,81 @@ print("Decision Tree : ")
 print("Training Set Accuracy : ", ac_train)
 print("Accuracy {0} ROC {1}".format(ac, rc))
 
-# cross validation
+# Validación cruzada
 result = cross_validate(model, X_train, y_train, scoring=scoring, cv=10)
 print_result(result)
+
+# Séptimo Modelo - Red Neuronal Artificial
+scaler = MinMaxScaler()
+df_transform = scaler.fit_transform(df)
+
+# Fijación de la semilla aleatoria para la reproducibilidad
+seed = 85
+np.random.seed(seed)
+
+# Función para crear el modelo, requirido por KerasClassifier
+def create_model():
+  # crear el modelo
+  model = Sequential()
+  model.add(Dense(5, input_dim=5, activation='relu'))
+  #model.add(Dropout(0.2))  # <-- added these later to see effect on score
+  model.add(Dense(4, activation='sigmoid'))
+  #model.add(Dropout(0.2))  # <-- added these later to see effect on score, omitted from baseline.
+  model.add(Dense(1, activation='sigmoid'))
+
+  # compilar el modelo
+  adam = Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8)
+  model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['accuracy'])
+  print(model.summary())
+  return model
+
+# crear el model
+model = KerasClassifier(build_fn=create_model, verbose=0)
+
+model.fit(X_train, y_train,
+          validation_data=(X_test,y_test),
+          epochs=100,
+          batch_size=32,
+          verbose=1)
+
+print(f"Accuracy: {accuracy_score(np.round(model.predict(X_test)),y_test)}")
+
+y_pred=model.predict(X_test)
+confusion_matrix(y_test,y_pred)
+
+# Encontrar los mejores parámetros
+# Function to create model, required for KerasClassifier:
+def gridsearch_create_model():
+  # create model
+  model = Sequential()
+  model.add(Dense(5, input_dim=5, activation='relu'))
+  model.add(Dense(4, activation='sigmoid'))
+  model.add(Dense(1, activation='sigmoid'))
+
+  # compile model
+  adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8)
+  model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['accuracy'])
+
+  return model
+
+  # crear model
+model2 = KerasClassifier(build_fn=gridsearch_create_model, verbose=0)
+
+  # define the grid search parameters
+param_grid = {'batch_size': [32, 64, 128, 256, 512],
+                'epochs': [100]}
+
+                # see "Results, with tuning:" cell below for version changes
+                # note: original batch_size: [10, 20, 40, 60, 80, 100],
+
+# Crear malla de búsqueda
+grid = GridSearchCV(estimator=model2, param_grid=param_grid)
+grid_result = grid.fit(X_train, y_train)
+
+# Reportar resultados
+print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
+means = grid_result.cv_results_['mean_test_score']
+stds = grid_result.cv_results_['std_test_score']
+params = grid_result.cv_results_['params']
+for mean, stdev, param in zip(means, stds, params):
+  print(f"Means: {mean}, Stdev: {stdev} with: {params}")
